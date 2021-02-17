@@ -1,0 +1,12 @@
+---
+name: Release
+
+on:
+  push:
+    tags:
+
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "example"
