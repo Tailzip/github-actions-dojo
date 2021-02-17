@@ -9,7 +9,7 @@ WORKDIR /app
 # Add application requirements
 COPY requirements.txt .
 # Install requirements
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 # Add application
 COPY app.py .
 # Create a specific user to run the Python application
