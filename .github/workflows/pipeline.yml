@@ -16,16 +16,51 @@ jobs:
   #         DEFAULT_BRANCH: main
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  sast:
-    name: Static Code Analysis Tests
+  # sast:
+  #   name: Static Code Analysis Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+
+  #     - uses: actions/setup-python@v2
+  #       with:
+  #         python-version: '3.x'
+
+  #     - run: |
+  #         pip3 install -r requirements.txt
+  #         bandit app.py
+  #       name: Run static code analysis
+
+  # tests:
+  #   name: Unit Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+
+  #     - uses: actions/setup-python@v2
+  #       with:
+  #         python-version: '3.x'
+
+  #     - run: |
+  #         pip3 install -r requirements.txt
+  #         python -m pytest --junit-xml=pytest-report.xml
+  #       name: Run unit tests
+
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+      - name: Build and push Docker image
+        run: |
+          echo $PAT | docker login ghcr.io -u tailzip --password-stdin
+          docker build --build-arg APP_VERSION="$APP_VERSION" -t $CONTAINER_COMMIT_IMAGE  -t $CONTAINER_LATEST_IMAGE .
+          docker push $CONTAINER_COMMIT_IMAGE
+          docker push $CONTAINER_LATEST_IMAGE
+        env:
+          PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          APP_VERSION: ${{ github.sha }}
+          CONTAINER_COMMIT_IMAGE: ghcr.io/tailzip/github-actions-dojo:${{ github.sha }}
+          CONTAINER_LATEST_IMAGE: ghcr.io/tailzip/github-actions-dojo:latest
 
-      - run: |
-          pip3 install bandit
-          bandit app.py
+# echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
