@@ -4,6 +4,11 @@ name: CI
 on:
   push:
 
+env:
+  CONTAINER_REGISTRY: ghcr.io/tailzip/github-actions-dojo
+  CONTAINER_COMMIT_IMAGE: ghcr.io/tailzip/github-actions-dojo:${{ github.sha }}
+  CONTAINER_LATEST_IMAGE: ghcr.io/tailzip/github-actions-dojo:latest
+
 jobs:
   lint-all:
     name: Lint
@@ -50,3 +55,22 @@ jobs:
         run: |
           pip3 install -r requirements.txt
           python -m pytest
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs:
+      - tests
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build and push Docker image
+        run: |
+          echo $PAT | docker login ghcr.io -u tailzip --password-stdin
+
+          docker build --build-arg APP_VERSION="$APP_VERSION" -t $CONTAINER_COMMIT_IMAGE  -t $CONTAINER_LATEST_IMAGE .
+          docker push $CONTAINER_COMMIT_IMAGE
+          docker push $CONTAINER_LATEST_IMAGE
+        env:
+          PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          APP_VERSION: ${{ github.sha }}
