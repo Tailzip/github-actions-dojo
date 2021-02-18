@@ -4,9 +4,33 @@ name: Release
 on:
   push:
     tags:
+      - 'v*.*.*'
+
+env:
+  CONTAINER_REGISTRY: ghcr.io/tailzip/github-actions-dojo
+  CONTAINER_COMMIT_IMAGE: ghcr.io/tailzip/github-actions-dojo:${{ github.sha }}
 
 jobs:
-  example:
+  release:
+    name: Release
     runs-on: ubuntu-latest
     steps:
-      - run: echo "example"
+      - uses: actions/checkout@v2
+
+      - name: Get tag name
+        id: tagName
+        run: echo "::set-output name=tag::${GITHUB_REF#refs/*/}"
+
+      # - uses: olegtarasov/get-tag@v2.1
+      #   id: tagName
+
+      - name: Release Docker image
+        run: |
+          echo $PAT | docker login ghcr.io -u tailzip --password-stdin
+
+          docker pull "$CONTAINER_COMMIT_IMAGE"
+          docker tag "$CONTAINER_COMMIT_IMAGE" "$CONTAINER_REGISTRY:$TAG"
+          docker push "$CONTAINER_REGISTRY:$TAG"
+        env:
+          PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          TAG: ${{ steps.tagName.outputs.tag }}
