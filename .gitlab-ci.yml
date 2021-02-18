@@ -1,0 +1,76 @@
+variables:
+  CONTAINER_COMMIT_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  CONTAINER_LATEST_IMAGE: $CI_REGISTRY_IMAGE:latest
+  PYTHON3_IMAGE: python:alpine
+
+stages:
+  - syntax
+  - sast
+  - unittests
+  - build
+  - inttests
+
+PyCodeStyle:
+  image: $PYTHON3_IMAGE
+  stage: syntax
+  script:
+  - pip install -r requirements.txt
+  - pycodestyle app.py
+
+Pylint:
+  image: $PYTHON3_IMAGE
+  stage: syntax
+  script:
+  - pip install -r requirements.txt
+  - pylint app.py
+
+Static Code Analysis Tests:
+  stage: sast
+  image: $PYTHON3_IMAGE
+  script:
+  - pip install -r requirements.txt
+  - bandit app.py
+
+Launch Unit Tests:
+  stage: unittests
+  image: $PYTHON3_IMAGE
+  script:
+  - pip install -r requirements.txt
+  - python -m pytest
+
+Build Image:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - test -z "$DOCKER_CONFIG" && export DOCKER_CONFIG=/kaniko/.docker
+    - |
+      cat > "${DOCKER_CONFIG}/config.json" <<EOF
+      {
+        "auths": {
+          "${CI_REGISTRY}": {
+            "username": "gitlab-ci-token",
+            "password": "${CI_JOB_TOKEN}"
+          }
+        }
+      }
+      EOF
+    - >-
+        /kaniko/executor
+        --context "${CI_PROJECT_DIR}"
+        --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+        --build-arg APP_VERSION="${CI_COMMIT_SHORT_SHA}"
+        --destination "${CONTAINER_COMMIT_IMAGE}"
+        --destination "${CONTAINER_LATEST_IMAGE}"
+
+Integ tests:
+  image:
+    name: dduportal/bats:0.4.0
+    entrypoint: [""]
+  stage: inttests
+  services:
+    - name: $CONTAINER_COMMIT_IMAGE
+      alias: my-app
+  script:
+    - $CI_PROJECT_DIR/gitlab-ci-scripts/test_bats.sh
