@@ -5,7 +5,14 @@ on:
   push:
 
 jobs:
-  example:
+  lint-all:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
-      - run: echo "example"
+      - uses: actions/checkout@v2
+
+      - uses: github/super-linter@v3
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
