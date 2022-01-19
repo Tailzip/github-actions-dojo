@@ -28,6 +28,22 @@ jobs:
         with:
           python-version: '3.x'
 
-      - uses: jpetrucciani/bandit-check@master
+      - uses: jpetrucciani/bandit-check@1.7.0
         with:
           path: app.py
+
+  unittests:
+    runs-on: ubuntu-latest
+    needs:
+      - sast
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m pytest
