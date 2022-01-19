@@ -5,7 +5,11 @@ on:
   push:
 
 jobs:
-  example:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "example"
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Super-Linter
+        uses: github/super-linter@v4.8.5
